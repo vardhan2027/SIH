@@ -9,14 +9,13 @@
 #define LA2_IN4 27
 
 // ============ STATE VARIABLES ============
-bool la1ForwardState = true;       // direction toggle for LA1
-bool laBothForwardState = true;    // direction toggle for both
+bool la1ForwardState = true;       
+bool laBothForwardState = true;    
 
 unsigned long debounce = 300;
-unsigned long lastPress = 0;
-
-// // Travel time based on 50mm stroke @ 15mm/s = 3.33s → use 3.5s
-// #define FULL_TRAVEL_TIME 3500
+unsigned long lastPressB1 = 0;
+unsigned long lastPressB2 = 0;
+unsigned long lastPressB3 = 0;
 
 
 // ================= MOTOR CONTROL =================
@@ -53,15 +52,20 @@ void stopAll() {
 void resetBoth() {
   Serial.println("Reset: Opening both actuators fully...");
 
-  digitalWrite(LA1_IN1, HIGH);
-  digitalWrite(LA1_IN2, LOW);
-  digitalWrite(LA2_IN3, HIGH);
-  digitalWrite(LA2_IN4, LOW);
+  // Open both
+  la1Forward();
+  la2Forward();
   // delay(FULL_TRAVEL_TIME);
 
   // stopAll();
-  Serial.println("Reset complete.");
+
+  // After reset → next action must be backward
+  la1ForwardState = false;
+  laBothForwardState = false;
+
+  Serial.println("Reset complete. Next action = BACKWARD.");
 }
+
 
 
 // ================= SETUP ==================
@@ -82,57 +86,48 @@ void setup() {
 }
 
 
+
 // ================= MAIN LOOP ==================
 void loop() {
 
   // -------- Button 1: Control LA1 only ---------
-  if (!digitalRead(B1) && millis() - lastPress > debounce) {
-    lastPress = millis();
+  if (!digitalRead(B1) && millis() - lastPressB1 > debounce) {
+    lastPressB1 = millis();
 
     if (la1ForwardState) {
       Serial.println("LA1 FORWARD");
       la1Forward();
-      //delay(FULL_TRAVEL_TIME);
-      //stopAll();
     } else {
       Serial.println("LA1 BACKWARD");
       la1Backward();
-      //delay(FULL_TRAVEL_TIME);
-      //stopAll();
     }
 
     la1ForwardState = !la1ForwardState;
   }
 
 
-  // -------- Button 2: Control both actuators ---------
-  if (!digitalRead(B2) && millis() - lastPress > debounce) {
-    lastPress = millis();
-
-    resetBoth();  // must open fully before any action
+  // -------- Button 2: Toggle both actuators ---------
+  if (!digitalRead(B2) && millis() - lastPressB2 > debounce) {
+    lastPressB2 = millis();
 
     if (laBothForwardState) {
       Serial.println("BOTH FORWARD");
       la1Forward();
       la2Forward();
-      // delay(FULL_TRAVEL_TIME);
-      // stopAll();
     } else {
       Serial.println("BOTH BACKWARD");
       la1Backward();
       la2Backward();
-      // delay(FULL_TRAVEL_TIME);
-      // stopAll();
     }
 
     laBothForwardState = !laBothForwardState;
   }
 
 
-  // -------- Button 3: Hard Reset both ---------
-  if (!digitalRead(B3) && millis() - lastPress > debounce) {
-    lastPress = millis();
+  // -------- Button 3: Hard Reset (open both) ---------
+  if (!digitalRead(B3) && millis() - lastPressB3 > debounce) {
+    lastPressB3 = millis();
     resetBoth();
-    
   }
+
 }
